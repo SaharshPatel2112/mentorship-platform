@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import authRoutes from "./routes/auth.routes";
 
 dotenv.config();
 
@@ -25,6 +26,9 @@ app.use(
 );
 
 app.use(express.json());
+
+// Routes
+app.use("/auth", authRoutes);
 
 app.get("/health", (req, res) => {
   res.json({
