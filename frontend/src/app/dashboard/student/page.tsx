@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
+import JoinSessionModal from "@/components/JoinSessionModal";
 import "../dashboard.css";
 
 export default function StudentDashboard() {
   const { user } = useUser();
+  const [showJoinModal, setShowJoinModal] = useState(false);
 
   return (
     <div className="dashboard-container">
@@ -27,16 +30,19 @@ export default function StudentDashboard() {
             <div className="card-icon">🔗</div>
             <div className="card-title">Join Session</div>
             <div className="card-desc">
-              Have a session link from your mentor? Enter the code to join.
+              Have a join code from your mentor? Click below to enter and join
+              the session.
             </div>
-            <button className="card-btn">Join Session</button>
+            <button className="card-btn" onClick={() => setShowJoinModal(true)}>
+              Join Session
+            </button>
           </div>
 
           <div className="dashboard-card">
             <div className="card-icon">📚</div>
             <div className="card-title">My Sessions</div>
             <div className="card-desc">
-              View all your past mentorship sessions and code snapshots.
+              View all your past mentorship sessions and revisit code snapshots.
             </div>
             <button className="card-btn-outline">View Sessions</button>
           </div>
@@ -45,12 +51,17 @@ export default function StudentDashboard() {
             <div className="card-icon">🎥</div>
             <div className="card-title">Video + Chat</div>
             <div className="card-desc">
-              1-on-1 video call with mic/camera controls and real-time chat.
+              1-on-1 video call with mic/camera controls and real-time session
+              chat.
             </div>
             <button className="card-btn-outline">Learn More</button>
           </div>
         </div>
       </div>
+
+      {showJoinModal && (
+        <JoinSessionModal onClose={() => setShowJoinModal(false)} />
+      )}
     </div>
   );
 }

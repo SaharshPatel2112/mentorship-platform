@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import userRoutes from "./routes/user.routes";
+import sessionRoutes from "./routes/session.routes";
 
 dotenv.config();
 
@@ -22,6 +23,8 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL || "http://localhost:3000",
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
@@ -29,6 +32,7 @@ app.use(express.json());
 
 // Routes
 app.use("/users", userRoutes);
+app.use("/sessions", sessionRoutes);
 
 app.get("/health", (req, res) => {
   res.json({

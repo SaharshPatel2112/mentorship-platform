@@ -1,10 +1,22 @@
 "use client";
 
+import { useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
+import CreateSessionModal from "@/components/CreateSessionModal";
 import "../dashboard.css";
+
+interface Session {
+  id: string;
+  title: string;
+  join_code: string;
+  language: string;
+  status: string;
+}
 
 export default function MentorDashboard() {
   const { user } = useUser();
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [lastSession, setLastSession] = useState<Session | null>(null);
 
   return (
     <div className="dashboard-container">
@@ -22,22 +34,62 @@ export default function MentorDashboard() {
           <p>Ready to start a mentorship session?</p>
         </div>
 
+        {lastSession && (
+          <div
+            style={{
+              background: "#eef2ff",
+              border: "1.5px solid #c7d2fe",
+              borderRadius: "var(--radius-md)",
+              padding: "16px 20px",
+              marginBottom: "24px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "12px",
+            }}
+          >
+            <div>
+              <div style={{ fontWeight: 600, color: "var(--color-text)" }}>
+                Last session: {lastSession.title}
+              </div>
+              <div
+                style={{
+                  fontSize: "0.85rem",
+                  color: "var(--color-text-muted)",
+                }}
+              >
+                Join code:{" "}
+                <strong style={{ letterSpacing: "3px" }}>
+                  {lastSession.join_code}
+                </strong>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="dashboard-cards">
           <div className="dashboard-card">
             <div className="card-icon">🎯</div>
             <div className="card-title">Create New Session</div>
             <div className="card-desc">
-              Start a new 1-on-1 mentorship session. Share the link with your
-              student.
+              Start a new 1-on-1 mentorship session. Share the join code with
+              your student.
             </div>
-            <button className="card-btn">Create Session</button>
+            <button
+              className="card-btn"
+              onClick={() => setShowCreateModal(true)}
+            >
+              Create Session
+            </button>
           </div>
 
           <div className="dashboard-card">
             <div className="card-icon">📋</div>
             <div className="card-title">My Sessions</div>
             <div className="card-desc">
-              View all your past and active mentorship sessions.
+              View all your past and active mentorship sessions and their
+              details.
             </div>
             <button className="card-btn-outline">View Sessions</button>
           </div>
@@ -53,6 +105,16 @@ export default function MentorDashboard() {
           </div>
         </div>
       </div>
+
+      {showCreateModal && (
+        <CreateSessionModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={(session) => {
+            setLastSession(session);
+            setShowCreateModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }
