@@ -1,6 +1,12 @@
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const { userId } = await auth();
+
+  if (userId) redirect("/dashboard");
+
   return (
     <main style={{ textAlign: "center", padding: "80px 20px" }}>
       <h1 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: "16px" }}>
@@ -16,7 +22,7 @@ export default function HomePage() {
         Real-time 1-on-1 mentorship with live code editor, video, and chat.
       </p>
       <div style={{ display: "flex", gap: "16px", justifyContent: "center" }}>
-        <Link href="/login">
+        <Link href="/sign-in">
           <button
             style={{
               padding: "12px 28px",
@@ -31,7 +37,7 @@ export default function HomePage() {
             Login
           </button>
         </Link>
-        <Link href="/signup">
+        <Link href="/sign-up">
           <button
             style={{
               padding: "12px 28px",

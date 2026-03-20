@@ -3,7 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import authRoutes from "./routes/auth.routes";
+import userRoutes from "./routes/user.routes";
 
 dotenv.config();
 
@@ -28,7 +28,7 @@ app.use(
 app.use(express.json());
 
 // Routes
-app.use("/auth", authRoutes);
+app.use("/users", userRoutes);
 
 app.get("/health", (req, res) => {
   res.json({
@@ -39,7 +39,6 @@ app.get("/health", (req, res) => {
 
 io.on("connection", (socket) => {
   console.log(`🔌 Socket connected: ${socket.id}`);
-
   socket.on("disconnect", () => {
     console.log(`❌ Socket disconnected: ${socket.id}`);
   });
