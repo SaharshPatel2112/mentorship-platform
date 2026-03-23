@@ -237,5 +237,58 @@ router.get(
     }
   },
 );
+// GET SESSION BY ID
+router.get(
+  "/find-by-id/:sessionId",
+  verifyClerkToken,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    const sessionId = req.params.sessionId as string;
+
+    try {
+      const { data: session, error } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("id", sessionId)
+        .single();
+
+      if (error || !session) {
+        res.status(404).json({ error: "Session not found" });
+        return;
+      }
+
+      res.status(200).json({ session });
+    } catch (err) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+// GET LATEST CODE SNAPSHOT
+router.get(
+  "/snapshot/:sessionId",
+  verifyClerkToken,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    const sessionId = req.params.sessionId as string;
+
+    try {
+      const { data, error } = await supabase
+        .from("code_snapshots")
+        .select("*")
+        .eq("session_id", sessionId)
+        .order("saved_at", { ascending: false })
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        res.status(200).json({ snapshot: null });
+        return;
+      }
+
+      res.status(200).json({ snapshot: data });
+    } catch (err) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
 
 export default router;

@@ -5,6 +5,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import userRoutes from "./routes/user.routes";
 import sessionRoutes from "./routes/session.routes";
+import { setupSessionSocket } from "./socket/sessionSocket";
 
 dotenv.config();
 
@@ -41,12 +42,8 @@ app.get("/health", (req, res) => {
   });
 });
 
-io.on("connection", (socket) => {
-  console.log(`🔌 Socket connected: ${socket.id}`);
-  socket.on("disconnect", () => {
-    console.log(`❌ Socket disconnected: ${socket.id}`);
-  });
-});
+// Socket.io
+setupSessionSocket(io);
 
 const PORT = process.env.PORT || 5000;
 

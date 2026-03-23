@@ -1,16 +1,16 @@
-"use client";
+'use client'
 
-import { useAuth } from "@clerk/nextjs";
+import { useAuth } from '@clerk/nextjs'
 
 export const useApiToken = () => {
-  const { getToken } = useAuth();
+  const { getToken } = useAuth()
 
   const authFetch = async (url: string, options: RequestInit = {}) => {
     try {
-      const token = await getToken();
+      const token = await getToken()
 
       if (!token) {
-        throw new Error("Not authenticated");
+        throw new Error('Not authenticated - no token')
       }
 
       const response = await fetch(
@@ -18,25 +18,34 @@ export const useApiToken = () => {
         {
           ...options,
           headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
             ...(options.headers || {}),
           },
-        },
-      );
+        }
+      )
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Request failed");
+      // Handle non-JSON responses
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error(`Server error: ${response.status} ${response.statusText}`)
       }
 
-      return data;
-    } catch (err: unknown) {
-      const e = err as Error;
-      throw new Error(e.message || "Failed to fetch");
-    }
-  };
+      const data = await response.json()
 
-  return { authFetch };
-};
+      if (!response.ok) {
+        throw new Error(data.error || data.message || `Request failed with status ${response.status}`)
+      }
+
+      return data
+
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        throw err
+      }
+      throw new Error(typeof err === 'string' ? err : 'Unknown error occurred')
+    }
+  }
+
+  return { authFetch }
+}

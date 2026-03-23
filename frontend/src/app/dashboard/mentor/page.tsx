@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import CreateSessionModal from "@/components/CreateSessionModal";
 import "../dashboard.css";
+import router from "next/router";
+import { useRouter } from "next/navigation";
 
 interface Session {
   id: string;
@@ -15,6 +17,7 @@ interface Session {
 
 export default function MentorDashboard() {
   const { user } = useUser();
+  const router = useRouter();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [lastSession, setLastSession] = useState<Session | null>(null);
 
@@ -51,7 +54,7 @@ export default function MentorDashboard() {
           >
             <div>
               <div style={{ fontWeight: 600, color: "var(--color-text)" }}>
-                Last session: {lastSession.title}
+                Active session: {lastSession.title}
               </div>
               <div
                 style={{
@@ -65,6 +68,13 @@ export default function MentorDashboard() {
                 </strong>
               </div>
             </div>
+            <button
+              className="card-btn"
+              style={{ width: "auto", padding: "8px 20px" }}
+              onClick={() => router.push(`/session/${lastSession.id}`)}
+            >
+              Enter Session →
+            </button>
           </div>
         )}
 
@@ -111,7 +121,6 @@ export default function MentorDashboard() {
           onClose={() => setShowCreateModal(false)}
           onCreated={(session) => {
             setLastSession(session);
-            setShowCreateModal(false);
           }}
         />
       )}

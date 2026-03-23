@@ -75,7 +75,7 @@ export default function JoinSessionModal({ onClose }: Props) {
           <button
             className="modal-submit-btn"
             onClick={handleJoin}
-            disabled={loading || joinCode.length < 6}
+            disabled={loading || joinCode.length < 8}
           >
             {loading ? "Joining..." : "Join Session →"}
           </button>

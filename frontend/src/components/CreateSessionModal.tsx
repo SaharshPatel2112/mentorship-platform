@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useApiToken } from "@/lib/getToken";
 import "./modals.css";
+import { useRouter } from "next/navigation";
 
 interface Session {
   id: string;
@@ -25,6 +26,7 @@ export default function CreateSessionModal({ onClose, onCreated }: Props) {
   const [error, setError] = useState("");
   const [created, setCreated] = useState<Session | null>(null);
   const [copied, setCopied] = useState(false);
+  const router = useRouter();
 
   const handleCreate = async () => {
     if (!title.trim()) {
@@ -136,9 +138,11 @@ export default function CreateSessionModal({ onClose, onCreated }: Props) {
             <button
               className="modal-submit-btn"
               style={{ marginTop: "10px" }}
-              onClick={onClose}
+              onClick={() => {
+                if (created) router.push(`/session/${created.id}`);
+              }}
             >
-              Go to Dashboard
+              Start Session →
             </button>
           </div>
         )}

@@ -1,0 +1,166 @@
+.session-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #1e1e1e;
+  overflow: hidden;
+}
+
+.session-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 52px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.session-navbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.session-logo {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.session-title {
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+.session-code-badge {
+  background: #2d2d2d;
+  border: 1px solid #444;
+  color: #888;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-family: monospace;
+  letter-spacing: 2px;
+}
+
+.session-navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.session-role-badge {
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.session-role-badge.mentor {
+  background: #312e81;
+  color: #a5b4fc;
+}
+
+.session-role-badge.student {
+  background: #064e3b;
+  color: #6ee7b7;
+}
+
+.end-session-btn {
+  padding: 6px 14px;
+  background: #7f1d1d;
+  color: #fca5a5;
+  border: 1px solid #991b1b;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.end-session-btn:hover {
+  background: #991b1b;
+  color: #fff;
+}
+
+.session-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.editor-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid #333;
+}
+
+.right-panel {
+  width: 340px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.video-wrapper {
+  height: 220px;
+  flex-shrink: 0;
+}
+
+.chat-wrapper {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Student cursor style in Monaco */
+.student-cursor {
+  background: rgba(255, 165, 0, 0.3);
+  border-left: 2px solid orange;
+}
+
+.student-cursor-before {
+  content: "▸";
+  color: orange;
+  font-size: 12px;
+}
+
+/* Resizable divider between editor and right panel */
+.resize-divider-h {
+  width: 5px;
+  background: #333;
+  cursor: col-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+  position: relative;
+  z-index: 10;
+}
+
+.resize-divider-h:hover,
+.resize-divider-h.dragging {
+  background: #6366f1;
+}
+
+/* Resizable divider between video and chat */
+.resize-divider-v {
+  height: 5px;
+  background: #333;
+  cursor: row-resize;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.resize-divider-v:hover,
+.resize-divider-v.dragging {
+  background: #6366f1;
+}
