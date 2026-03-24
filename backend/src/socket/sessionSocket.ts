@@ -43,6 +43,21 @@ interface ChatMessageData {
   type: "text" | "system" | "code";
 }
 
+interface VideoOfferData {
+  sessionId: string;
+  offer: object;
+}
+
+interface VideoAnswerData {
+  sessionId: string;
+  answer: object;
+}
+
+interface IceCandidateData {
+  sessionId: string;
+  candidate: object;
+}
+
 // Track last snapshot save time to avoid too many DB writes
 const lastSnapshotTime: Record<string, number> = {};
 
@@ -59,10 +74,10 @@ export const setupSessionSocket = (io: Server) => {
 
         console.log(`👤 ${userName} (${role}) joined room: ${sessionId}`);
 
-        // Notify others
+        // Notify others in room
         socket.to(sessionId).emit("user:joined", { userId, userName, role });
 
-        // System message to others only
+        // System message to others only — not saved to DB
         socket.to(sessionId).emit("chat:receive", {
           id: `sys-${Date.now()}`,
           senderId: "system",
@@ -88,7 +103,7 @@ export const setupSessionSocket = (io: Server) => {
           });
         }
 
-        // Send chat history to the joiner only
+        // Send chat history to joiner only
         const { data: messages } = await supabase
           .from("messages")
           .select("*")
@@ -116,6 +131,7 @@ export const setupSessionSocket = (io: Server) => {
       },
     );
 
+    // ── CODE SYNC ──────────────────────────────────────────
     socket.on(
       "code:change",
       async ({ sessionId, code, language }: CodeChangeData) => {
@@ -205,6 +221,30 @@ export const setupSessionSocket = (io: Server) => {
       },
     );
 
+    // ── WebRTC SIGNALING ───────────────────────────────────
+    // Mentor sends SDP offer → forward to student
+    socket.on("video:offer", ({ sessionId, offer }: VideoOfferData) => {
+      console.log(`📹 Video offer from ${socket.data.userName}`);
+      socket.to(sessionId).emit("video:offer", { offer });
+    });
+
+    // Student sends SDP answer → forward to mentor
+    socket.on("video:answer", ({ sessionId, answer }: VideoAnswerData) => {
+      console.log(`📹 Video answer from ${socket.data.userName}`);
+      socket.to(sessionId).emit("video:answer", { answer });
+    });
+
+    // Both send ICE candidates → forward to other person
+    socket.on("video:ice", ({ sessionId, candidate }: IceCandidateData) => {
+      socket.to(sessionId).emit("video:ice", { candidate });
+    });
+
+    // Notify other user that someone started video call
+    socket.on("video:ready", ({ sessionId }: { sessionId: string }) => {
+      console.log(`📹 Video ready in room: ${sessionId}`);
+      socket.to(sessionId).emit("video:ready");
+    });
+
     // ── LEAVE ──────────────────────────────────────────────
     socket.on(
       "room:leave",
@@ -224,6 +264,17 @@ export const setupSessionSocket = (io: Server) => {
     // ── DISCONNECT ─────────────────────────────────────────
     socket.on("disconnect", () => {
       console.log(`❌ Socket disconnected: ${socket.id}`);
+      const { sessionId, userName } = socket.data || {};
+      if (sessionId && userName) {
+        socket.to(sessionId).emit("chat:receive", {
+          id: `sys-${Date.now()}`,
+          senderId: "system",
+          senderName: "System",
+          content: `${userName} left the session`,
+          type: "system",
+          createdAt: new Date().toISOString(),
+        });
+      }
     });
   });
 };

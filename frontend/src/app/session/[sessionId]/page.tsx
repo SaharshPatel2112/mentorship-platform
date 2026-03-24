@@ -100,9 +100,14 @@ export default function SessionPage() {
     const initSession = async () => {
       console.log("initSession started:", sessionId);
       try {
-        // Fetch session
         const data = await authFetch(`/sessions/find-by-id/${sessionId}`);
-        console.log("session fetched:", data);
+
+        // authFetch returns null when Clerk token is cancelled
+        if (!data) {
+          console.log("Token cancelled — retrying...");
+          setLoading(false);
+          return;
+        }
 
         if (!data?.session) {
           console.error("No session found");
@@ -115,10 +120,8 @@ export default function SessionPage() {
         const userRole = (user.unsafeMetadata?.role as string) || "student";
         setRole(userRole === "mentor" ? "mentor" : "student");
 
-        // Fetch snapshot
         try {
           const snapData = await authFetch(`/sessions/snapshot/${sessionId}`);
-          console.log("snapshot fetched:", snapData);
           if (snapData?.snapshot) {
             setInitialCode(snapData.snapshot.code);
             setInitialLanguage(snapData.snapshot.language);
@@ -126,12 +129,10 @@ export default function SessionPage() {
             setInitialLanguage(data.session.language || "javascript");
           }
         } catch {
-          // No snapshot yet — use session default language
           setInitialLanguage(data.session.language || "javascript");
         }
 
         console.log("loading done");
-        // ← This was missing before — setLoading(false) must be called
         setLoading(false);
       } catch (err: unknown) {
         console.error(
@@ -139,7 +140,6 @@ export default function SessionPage() {
           err instanceof Error ? err.message : err,
         );
         setLoading(false);
-        router.push("/dashboard");
       }
     };
 
@@ -270,7 +270,7 @@ export default function SessionPage() {
           <div
             style={{ height: videoHeight, flexShrink: 0, overflow: "hidden" }}
           >
-            <VideoPanel sessionId={sessionId} />
+            <VideoPanel sessionId={sessionId} socket={socket} role={role} />
           </div>
 
           {/* Vertical divider */}
