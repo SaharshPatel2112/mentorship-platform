@@ -66,7 +66,6 @@ router.post(
   },
 );
 
-// ── JOIN SESSION (Student only) ────────────────────────────
 router.post(
   "/join/:joinCode",
   verifyClerkToken,
@@ -97,13 +96,20 @@ router.post(
         return;
       }
 
+      // Allow rejoin — student can join active sessions too
+      // Only update student_id if not already set
+      const updatePayload: Record<string, unknown> = {
+        status: "active",
+      };
+
+      if (!session.student_id) {
+        updatePayload.student_id = req.userId;
+        updatePayload.started_at = new Date().toISOString();
+      }
+
       const { data: updated, error: updateError } = await supabase
         .from("sessions")
-        .update({
-          student_id: req.userId,
-          status: "active",
-          started_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", session.id)
         .select()
         .single();
@@ -113,9 +119,10 @@ router.post(
         return;
       }
 
-      res
-        .status(200)
-        .json({ message: "Joined session successfully", session: updated });
+      res.status(200).json({
+        message: "Joined session successfully",
+        session: updated,
+      });
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }

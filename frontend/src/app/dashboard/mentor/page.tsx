@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import CreateSessionModal from "@/components/CreateSessionModal";
 import MentorSessionsList from "@/components/MentorSessionsList";
 import "../dashboard.css";
 
-interface Session {
+interface ActiveSession {
   id: string;
   title: string;
   join_code: string;
@@ -20,7 +20,57 @@ export default function MentorDashboard() {
   const router = useRouter();
   const [showCreateModal, setShowCreate] = useState(false);
   const [showSchedule, setShowSchedule] = useState(false);
-  const [lastSession, setLastSession] = useState<Session | null>(null);
+  const [activeSession, setActiveSession] = useState<ActiveSession | null>(
+    null,
+  );
+  const [hasEntered, setHasEntered] = useState(false);
+
+  // Load active session from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("mentorActiveSession");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setActiveSession(parsed.session);
+        setHasEntered(parsed.hasEntered || false);
+      } catch {
+        localStorage.removeItem("mentorActiveSession");
+      }
+    }
+  }, []);
+
+  // Save to localStorage whenever activeSession changes
+  useEffect(() => {
+    if (activeSession) {
+      localStorage.setItem(
+        "mentorActiveSession",
+        JSON.stringify({
+          session: activeSession,
+          hasEntered,
+        }),
+      );
+    } else {
+      localStorage.removeItem("mentorActiveSession");
+    }
+  }, [activeSession, hasEntered]);
+
+  const handleSessionCreated = (session: ActiveSession) => {
+    setActiveSession(session);
+    setHasEntered(false);
+    setShowCreate(false);
+  };
+
+  const handleEnterSession = () => {
+    if (!activeSession) return;
+    setHasEntered(true);
+    router.push(`/session/${activeSession.id}`);
+  };
+
+  const handleEndSessionBanner = () => {
+    setActiveSession(null);
+    setHasEntered(false);
+    localStorage.removeItem("mentorActiveSession");
+  };
 
   return (
     <div className="dashboard-container">
@@ -40,65 +90,102 @@ export default function MentorDashboard() {
               <p>Create a session or manage your schedule.</p>
             </div>
 
-            {/* Active session banner */}
-            {lastSession && (
+            {/* ── Active Session Banner ── */}
+            {activeSession && (
               <div
                 style={{
                   background: "#eef2ff",
                   border: "1.5px solid #c7d2fe",
                   borderRadius: "var(--radius-md)",
-                  padding: "16px 20px",
+                  padding: "18px 20px",
                   marginBottom: "24px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  gap: "12px",
                 }}
               >
-                <div>
-                  <div
-                    style={{
-                      fontWeight: 600,
-                      color: "var(--color-text)",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    ✅ Session created — {lastSession.title}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "0.85rem",
-                      color: "var(--color-text-muted)",
-                    }}
-                  >
-                    Join code:{" "}
-                    <strong
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: "12px",
+                  }}
+                >
+                  <div>
+                    <div
                       style={{
-                        letterSpacing: "3px",
-                        fontFamily: "monospace",
-                        color: "var(--color-primary)",
+                        fontWeight: 600,
+                        color: "var(--color-text)",
+                        marginBottom: "6px",
+                        fontSize: "0.95rem",
                       }}
                     >
-                      {lastSession.join_code}
-                    </strong>
-                    <span style={{ marginLeft: "8px", fontSize: "0.78rem" }}>
-                      — Copy this and add to your schedule
-                    </span>
+                      {hasEntered ? "🔄 Active Session" : "✅ Session Created"}{" "}
+                      — {activeSession.title}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "0.82rem",
+                        color: "var(--color-text-muted)",
+                      }}
+                    >
+                      Join code:{" "}
+                      <strong
+                        style={{
+                          letterSpacing: "3px",
+                          fontFamily: "monospace",
+                          color: "var(--color-primary)",
+                          fontSize: "0.9rem",
+                        }}
+                      >
+                        {activeSession.join_code}
+                      </strong>
+                      {!hasEntered && (
+                        <span
+                          style={{ marginLeft: "8px", fontSize: "0.75rem" }}
+                        >
+                          — Copy and add to your schedule
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}
+                  >
+                    {/* Enter / Rejoin button */}
+                    <button
+                      className="card-btn"
+                      style={{ width: "auto", padding: "9px 20px" }}
+                      onClick={handleEnterSession}
+                    >
+                      {hasEntered ? "🔄 Rejoin Session" : "▶️ Enter Session →"}
+                    </button>
+
+                    {/* End session (remove banner) */}
+                    <button
+                      onClick={handleEndSessionBanner}
+                      style={{
+                        padding: "9px 16px",
+                        background: "transparent",
+                        border: "1.5px solid #fca5a5",
+                        color: "#ef4444",
+                        borderRadius: "var(--radius-sm)",
+                        fontWeight: 600,
+                        fontSize: "0.82rem",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      ✕ End Session
+                    </button>
                   </div>
                 </div>
-                <button
-                  className="card-btn"
-                  style={{ width: "auto", padding: "8px 20px" }}
-                  onClick={() => router.push(`/session/${lastSession.id}`)}
-                >
-                  Enter Session →
-                </button>
               </div>
             )}
 
+            {/* ── Dashboard Cards ── */}
             <div className="dashboard-cards">
-              {/* Create Session */}
               <div className="dashboard-card">
                 <div className="card-icon">🎯</div>
                 <div className="card-title">Create Session</div>
@@ -114,7 +201,6 @@ export default function MentorDashboard() {
                 </button>
               </div>
 
-              {/* My Sessions Schedule */}
               <div className="dashboard-card">
                 <div className="card-icon">📅</div>
                 <div className="card-title">Class Schedule</div>
@@ -133,7 +219,6 @@ export default function MentorDashboard() {
           </>
         ) : (
           <>
-            {/* Back button */}
             <button
               onClick={() => setShowSchedule(false)}
               style={{
@@ -160,10 +245,7 @@ export default function MentorDashboard() {
       {showCreateModal && (
         <CreateSessionModal
           onClose={() => setShowCreate(false)}
-          onCreated={(session) => {
-            setLastSession(session);
-            setShowCreate(false);
-          }}
+          onCreated={handleSessionCreated}
         />
       )}
     </div>

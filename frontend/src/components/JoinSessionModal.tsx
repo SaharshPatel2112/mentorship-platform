@@ -17,8 +17,8 @@ export default function JoinSessionModal({ onClose }: Props) {
   const [error, setError] = useState("");
 
   const handleJoin = async () => {
-    if (!joinCode.trim() || joinCode.length < 6) {
-      setError("Please enter a valid join code");
+    if (!joinCode.trim() || joinCode.length < 8) {
+      setError("Please enter a valid 8-character join code");
       return;
     }
     setLoading(true);
@@ -29,10 +29,25 @@ export default function JoinSessionModal({ onClose }: Props) {
         method: "POST",
       })) as { session: { id: string } };
 
-      router.push(`/session/${data.session.id}`);
+      if (data?.session?.id) {
+        router.push(`/session/${data.session.id}`);
+      } else {
+        setError("Could not join session. Try again.");
+      }
     } catch (err: unknown) {
       const e = err as Error;
-      setError(e.message || "Failed to join session");
+      const msg = e.message || "Failed to join session";
+
+      // Show friendly message
+      if (msg.includes("ended")) {
+        setError(
+          "This session has ended. Ask your mentor to create a new one.",
+        );
+      } else if (msg.includes("not found")) {
+        setError("Join code not found. Double-check with your mentor.");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -52,25 +67,32 @@ export default function JoinSessionModal({ onClose }: Props) {
           {error && <div className="modal-error">{error}</div>}
 
           <div className="modal-form-group">
-            <label>Enter Join Code</label>
+            <label>Enter 8-Character Join Code</label>
             <input
               className="join-code-input"
               type="text"
               placeholder="XXXXXXXX"
               value={joinCode}
               maxLength={8}
-              onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+              onChange={(e) => {
+                setError("");
+                setJoinCode(e.target.value.toUpperCase());
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && joinCode.length === 8) handleJoin();
+              }}
+              autoFocus
             />
           </div>
 
           <p
             style={{
-              fontSize: "0.85rem",
+              fontSize: "0.82rem",
               color: "var(--color-text-muted)",
               textAlign: "center",
             }}
           >
-            Ask your mentor for the 8-character join code
+            Get the code from your mentor or class schedule
           </p>
 
           <button

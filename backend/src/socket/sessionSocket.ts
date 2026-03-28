@@ -1,6 +1,9 @@
 import { Server, Socket } from "socket.io";
 import { supabase } from "../config/supabase";
 
+// Track users in each room
+const roomUsers: Record<string, Set<string>> = {};
+
 interface JoinRoomData {
   sessionId: string;
   userId: string;
@@ -71,6 +74,12 @@ export const setupSessionSocket = (io: Server) => {
       async ({ sessionId, userId, userName, role }: JoinRoomData) => {
         socket.join(sessionId);
         socket.data = { sessionId, userId, userName, role };
+        if (!roomUsers[sessionId]) roomUsers[sessionId] = new Set();
+        roomUsers[sessionId].add(userId);
+
+        console.log(
+          `👤 ${userName} (${role}) joined room: ${sessionId} — users: ${roomUsers[sessionId].size}`,
+        );
 
         console.log(`👤 ${userName} (${role}) joined room: ${sessionId}`);
 
@@ -245,10 +254,17 @@ export const setupSessionSocket = (io: Server) => {
       socket.to(sessionId).emit("video:ready");
     });
 
-    // ── LEAVE ──────────────────────────────────────────────
     socket.on(
       "room:leave",
       ({ sessionId, userName }: { sessionId: string; userName: string }) => {
+        const userId = socket.data?.userId;
+        const role = socket.data?.role;
+
+        if (roomUsers[sessionId] && userId) {
+          roomUsers[sessionId].delete(userId);
+        }
+
+        // Notify others
         socket.to(sessionId).emit("chat:receive", {
           id: `sys-${Date.now()}`,
           senderId: "system",
@@ -257,23 +273,51 @@ export const setupSessionSocket = (io: Server) => {
           type: "system",
           createdAt: new Date().toISOString(),
         });
+
+        // Notify other user that this person left — they can still rejoin
+        socket.to(sessionId).emit("user:left", {
+          userName,
+          role,
+          canRejoin: true,
+        });
+
+        console.log(
+          `👋 ${userName} left room ${sessionId} — users remaining: ${roomUsers[sessionId]?.size || 0}`,
+        );
+
         socket.leave(sessionId);
       },
     );
 
-    // ── DISCONNECT ─────────────────────────────────────────
     socket.on("disconnect", () => {
       console.log(`❌ Socket disconnected: ${socket.id}`);
-      const { sessionId, userName } = socket.data || {};
-      if (sessionId && userName) {
-        socket.to(sessionId).emit("chat:receive", {
-          id: `sys-${Date.now()}`,
-          senderId: "system",
-          senderName: "System",
-          content: `${userName} left the session`,
-          type: "system",
-          createdAt: new Date().toISOString(),
-        });
+      const { sessionId, userName, userId, role } = socket.data || {};
+
+      if (sessionId && userId) {
+        if (roomUsers[sessionId]) {
+          roomUsers[sessionId].delete(userId);
+          console.log(
+            `❌ ${userName} disconnected — room ${sessionId} users: ${roomUsers[sessionId].size}`,
+          );
+        }
+
+        if (userName) {
+          socket.to(sessionId).emit("chat:receive", {
+            id: `sys-${Date.now()}`,
+            senderId: "system",
+            senderName: "System",
+            content: `${userName} disconnected`,
+            type: "system",
+            createdAt: new Date().toISOString(),
+          });
+
+          // Tell remaining user that other person disconnected but can rejoin
+          socket.to(sessionId).emit("user:left", {
+            userName,
+            role,
+            canRejoin: true,
+          });
+        }
       }
     });
   });

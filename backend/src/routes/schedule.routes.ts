@@ -14,8 +14,14 @@ router.post(
       return;
     }
 
-    const { date, time_label, description, join_code, student_email } =
-      req.body;
+    const {
+      date,
+      time_label,
+      time_value,
+      description,
+      join_code,
+      student_email,
+    } = req.body;
 
     if (!date) {
       res.status(400).json({ error: "Date is required" });
@@ -29,6 +35,7 @@ router.post(
           mentor_id: req.userId,
           date,
           time_label: time_label || "",
+          time_value: time_value || "",
           description: description || "",
           join_code: join_code || "",
           student_email: student_email || "",
@@ -62,7 +69,8 @@ router.get(
         .select("*")
         .eq("mentor_id", req.userId)
         .gte("date", today)
-        .order("date", { ascending: true });
+        .order("date", { ascending: true })
+        .order("time_value", { ascending: true });
 
       if (error) {
         res.status(400).json({ error: error.message });
@@ -101,7 +109,8 @@ router.get(
         .select("*")
         .eq("student_email", email)
         .gte("date", today)
-        .order("date", { ascending: true });
+        .order("date", { ascending: true })
+        .order("time_value", { ascending: true });
 
       if (error) {
         res.status(400).json({ error: error.message });
@@ -126,8 +135,14 @@ router.patch(
     }
 
     const scheduleId = req.params.scheduleId as string;
-    const { date, time_label, description, join_code, student_email } =
-      req.body;
+    const {
+      date,
+      time_label,
+      time_value,
+      description,
+      join_code,
+      student_email,
+    } = req.body;
 
     try {
       const { data, error } = await supabase
@@ -135,6 +150,7 @@ router.patch(
         .update({
           ...(date !== undefined && { date }),
           ...(time_label !== undefined && { time_label }),
+          ...(time_value !== undefined && { time_value }),
           ...(description !== undefined && { description }),
           ...(join_code !== undefined && { join_code }),
           ...(student_email !== undefined && { student_email }),

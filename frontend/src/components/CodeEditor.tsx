@@ -328,9 +328,9 @@ export default function CodeEditor({
         </select>
 
         <span
-          style={{ marginLeft: "auto", fontSize: "0.72rem", color: "#666" }}
+          style={{ marginLeft: "auto", fontSize: "0.72rem", color: "#888" }}
         >
-          {role === "mentor" ? "👁️ Viewing" : "✏️ Editing"}
+          ✏️ Editing
         </span>
       </div>
 

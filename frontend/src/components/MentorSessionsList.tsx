@@ -8,6 +8,7 @@ interface Schedule {
   id: string;
   date: string;
   time_label: string;
+  time_value: string;
   description: string;
   join_code: string;
   student_email: string;
@@ -15,10 +16,20 @@ interface Schedule {
   isEditing?: boolean;
 }
 
+// Convert 24h time to IST display format
+const toIST = (time24: string): string => {
+  if (!time24) return "";
+  const [h, m] = time24.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${m.toString().padStart(2, "0")} ${period} IST`;
+};
+
 const emptyRow = (): Schedule => ({
   id: `new-${Date.now()}`,
   date: "",
   time_label: "",
+  time_value: "",
   description: "",
   join_code: "",
   student_email: "",
@@ -36,7 +47,7 @@ export default function MentorSessionsList() {
 
   // ── Fetch ──────────────────────────────────────────────
   useEffect(() => {
-    const fetch = async () => {
+    const fetchData = async () => {
       try {
         const data = (await authFetch("/schedules/my")) as {
           schedules: Schedule[];
@@ -48,30 +59,33 @@ export default function MentorSessionsList() {
         setLoading(false);
       }
     };
-    fetch();
+    fetchData();
   }, []);
 
-  // ── Add row ────────────────────────────────────────────
   const handleAddRow = () => {
     if (schedules.some((s) => s.isEditing)) return;
     setSchedules((prev) => [...prev, emptyRow()]);
   };
 
-  // ── Field change ───────────────────────────────────────
   const handleChange = (id: string, field: keyof Schedule, value: string) => {
     setSchedules((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        // When time_value changes, also update time_label for display
+        if (field === "time_value") {
+          return { ...s, time_value: value, time_label: toIST(value) };
+        }
+        return { ...s, [field]: value };
+      }),
     );
   };
 
-  // ── Start edit ─────────────────────────────────────────
   const handleEdit = (id: string) => {
     setSchedules((prev) =>
       prev.map((s) => (s.id === id ? { ...s, isEditing: true } : s)),
     );
   };
 
-  // ── Cancel ─────────────────────────────────────────────
   const handleCancel = (id: string, isNew?: boolean) => {
     if (isNew) {
       setSchedules((prev) => prev.filter((s) => s.id !== id));
@@ -82,22 +96,24 @@ export default function MentorSessionsList() {
     }
   };
 
-  // ── Save ───────────────────────────────────────────────
   const handleSave = async (schedule: Schedule) => {
     if (!schedule.date) return;
     setSaving(schedule.id);
+
+    const payload = {
+      date: schedule.date,
+      time_label: schedule.time_label,
+      time_value: schedule.time_value,
+      description: schedule.description,
+      join_code: schedule.join_code,
+      student_email: schedule.student_email,
+    };
 
     try {
       if (schedule.isNew) {
         const data = (await authFetch("/schedules/create", {
           method: "POST",
-          body: JSON.stringify({
-            date: schedule.date,
-            time_label: schedule.time_label,
-            description: schedule.description,
-            join_code: schedule.join_code,
-            student_email: schedule.student_email,
-          }),
+          body: JSON.stringify(payload),
         })) as { schedule: Schedule };
 
         setSchedules((prev) =>
@@ -110,13 +126,7 @@ export default function MentorSessionsList() {
       } else {
         const data = (await authFetch(`/schedules/update/${schedule.id}`, {
           method: "PATCH",
-          body: JSON.stringify({
-            date: schedule.date,
-            time_label: schedule.time_label,
-            description: schedule.description,
-            join_code: schedule.join_code,
-            student_email: schedule.student_email,
-          }),
+          body: JSON.stringify(payload),
         })) as { schedule: Schedule };
 
         setSchedules((prev) =>
@@ -132,7 +142,6 @@ export default function MentorSessionsList() {
     }
   };
 
-  // ── Delete ─────────────────────────────────────────────
   const handleDelete = async (id: string) => {
     try {
       await authFetch(`/schedules/${id}`, { method: "DELETE" });
@@ -143,17 +152,16 @@ export default function MentorSessionsList() {
     }
   };
 
-  // ── Copy code ──────────────────────────────────────────
   const handleCopy = (id: string, code: string) => {
+    if (!code) return;
     navigator.clipboard.writeText(code);
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // ── Format date for display ────────────────────────────
   const formatDate = (dateStr: string) => {
     if (!dateStr) return "—";
-    return new Date(dateStr).toLocaleDateString("en-GB", {
+    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -187,6 +195,7 @@ export default function MentorSessionsList() {
             alignItems: "center",
             justifyContent: "center",
             zIndex: 1000,
+            backdropFilter: "blur(2px)",
           }}
         >
           <div
@@ -198,9 +207,10 @@ export default function MentorSessionsList() {
               width: "90%",
               textAlign: "center",
               boxShadow: "var(--shadow-lg)",
+              border: "1px solid var(--color-border)",
             }}
           >
-            <div style={{ fontSize: "2rem", marginBottom: "12px" }}>🗑️</div>
+            <div style={{ fontSize: "2.5rem", marginBottom: "12px" }}>🗑️</div>
             <div
               style={{
                 fontWeight: 700,
@@ -213,12 +223,13 @@ export default function MentorSessionsList() {
             <div
               style={{
                 color: "var(--color-text-muted)",
-                fontSize: "0.9rem",
+                fontSize: "0.875rem",
                 marginBottom: "24px",
+                lineHeight: 1.6,
               }}
             >
               Are you sure you want to delete this scheduled session? This
-              cannot be undone.
+              action cannot be undone.
             </div>
             <div
               style={{ display: "flex", gap: "10px", justifyContent: "center" }}
@@ -233,6 +244,7 @@ export default function MentorSessionsList() {
                   fontWeight: 600,
                   cursor: "pointer",
                   color: "var(--color-text-muted)",
+                  fontSize: "0.875rem",
                 }}
               >
                 Cancel
@@ -247,6 +259,7 @@ export default function MentorSessionsList() {
                   borderRadius: "var(--radius-sm)",
                   fontWeight: 600,
                   cursor: "pointer",
+                  fontSize: "0.875rem",
                 }}
               >
                 Yes, Delete
@@ -268,7 +281,7 @@ export default function MentorSessionsList() {
                 marginTop: "2px",
               }}
             >
-              Upcoming sessions only — past sessions auto-removed
+              Upcoming sessions only · Sorted by date &amp; time · IST timezone
             </div>
           </div>
           <button className="add-row-btn" onClick={handleAddRow}>
@@ -282,7 +295,7 @@ export default function MentorSessionsList() {
             <thead>
               <tr>
                 <th style={{ width: "140px" }}>Date</th>
-                <th style={{ width: "110px" }}>Time</th>
+                <th style={{ width: "140px" }}>Time (IST)</th>
                 <th>Description / Topic</th>
                 <th style={{ width: "160px" }}>Join Code</th>
                 <th style={{ width: "190px" }}>Student Email</th>
@@ -319,27 +332,42 @@ export default function MentorSessionsList() {
                         />
                       ) : (
                         <span style={{ fontWeight: 500, fontSize: "0.875rem" }}>
-                          📅 {formatDate(s.date)}
+                          {formatDate(s.date)}
                         </span>
                       )}
                     </td>
 
-                    {/* Time — plain text */}
+                    {/* Time — IST time picker */}
                     <td>
                       {s.isEditing ? (
-                        <input
-                          className="table-input"
-                          placeholder="10:30 AM"
-                          value={s.time_label || ""}
-                          onChange={(e) =>
-                            handleChange(s.id, "time_label", e.target.value)
-                          }
-                        />
+                        <div>
+                          <input
+                            className="table-input"
+                            type="time"
+                            value={s.time_value || ""}
+                            onChange={(e) =>
+                              handleChange(s.id, "time_value", e.target.value)
+                            }
+                          />
+                          {s.time_value && (
+                            <div
+                              style={{
+                                fontSize: "0.72rem",
+                                color: "var(--color-primary)",
+                                marginTop: "3px",
+                                fontWeight: 500,
+                              }}
+                            >
+                              {toIST(s.time_value)}
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <span
                           style={{
                             fontSize: "0.85rem",
                             color: "var(--color-text-muted)",
+                            fontWeight: 500,
                           }}
                         >
                           {s.time_label || "—"}
@@ -374,7 +402,7 @@ export default function MentorSessionsList() {
                       )}
                     </td>
 
-                    {/* Join Code — blank, mentor adds manually via edit */}
+                    {/* Join Code */}
                     <td>
                       {s.isEditing ? (
                         <input
@@ -399,7 +427,6 @@ export default function MentorSessionsList() {
                           <button
                             className="copy-code-btn"
                             onClick={() => handleCopy(s.id, s.join_code)}
-                            title="Copy code"
                           >
                             {copiedId === s.id ? "✅" : "📋"}
                           </button>
@@ -470,7 +497,6 @@ export default function MentorSessionsList() {
                             <button
                               className="tbl-btn delete"
                               onClick={() => setConfirm(s.id)}
-                              title="Delete session"
                             >
                               🗑️
                             </button>

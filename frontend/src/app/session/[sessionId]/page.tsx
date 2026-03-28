@@ -179,6 +179,43 @@ export default function SessionPage() {
         userName: user.firstName || "User",
       });
     };
+    // Listen for other user leaving — show notification but don't redirect
+    socket.on(
+      "user:left",
+      ({
+        userName,
+        canRejoin,
+      }: {
+        userName: string;
+        role: string;
+        canRejoin: boolean;
+      }) => {
+        if (canRejoin) {
+          // Show temporary notification
+          const toast = document.createElement("div");
+          toast.innerText = `${userName} left — they can rejoin`;
+          toast.style.cssText = `
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      background: #1e293b;
+      color: #94a3b8;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      z-index: 9999;
+      animation: fadeIn 0.2s ease;
+      border: 1px solid #334155;
+    `;
+          document.body.appendChild(toast);
+          setTimeout(() => toast.remove(), 4000);
+        }
+      },
+    );
+
+    return () => {
+      socket.off("user:left");
+    };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
 
@@ -232,8 +269,19 @@ export default function SessionPage() {
         <div className="session-navbar-right">
           <span className={`session-role-badge ${role}`}>{role}</span>
           {role === "mentor" ? (
-            <button className="end-session-btn" onClick={handleEndSession}>
-              🚪 Leave & End Session
+            <button
+              className="end-session-btn"
+              onClick={() => {
+                if (socket) {
+                  socket.emit("room:leave", {
+                    sessionId,
+                    userName: user?.firstName || "Mentor",
+                  });
+                }
+                router.push("/dashboard");
+              }}
+            >
+              🚪 Leave Session
             </button>
           ) : (
             <button
