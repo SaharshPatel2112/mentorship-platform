@@ -18,12 +18,10 @@ export default function OnboardingPage() {
     setError("");
 
     try {
-      // Save role in Clerk metadata
       await user.update({
         unsafeMetadata: { role },
       });
 
-      // Sync user to Supabase
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/users/sync`,
         {
@@ -43,7 +41,8 @@ export default function OnboardingPage() {
         throw new Error(data.error || "Sync failed");
       }
 
-      router.push("/dashboard");
+      // Force reload so Clerk metadata updates before redirect
+      window.location.href = "/dashboard";
     } catch (err: unknown) {
       const e = err as Error;
       setError(e.message || "Something went wrong. Please try again.");

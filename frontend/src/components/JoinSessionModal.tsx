@@ -25,9 +25,10 @@ export default function JoinSessionModal({ onClose }: Props) {
     setError("");
 
     try {
-      const data = await authFetch(`/sessions/join/${joinCode}`, {
+      const data = (await authFetch(`/sessions/join/${joinCode}`, {
         method: "POST",
-      });
+      })) as { session: { id: string } };
+
       router.push(`/session/${data.session.id}`);
     } catch (err: unknown) {
       const e = err as Error;

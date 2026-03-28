@@ -6,6 +6,7 @@ import { Server } from "socket.io";
 import userRoutes from "./routes/user.routes";
 import sessionRoutes from "./routes/session.routes";
 import { setupSessionSocket } from "./socket/sessionSocket";
+import scheduleRoutes from "./routes/schedule.routes";
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use(express.json());
 // Routes
 app.use("/users", userRoutes);
 app.use("/sessions", sessionRoutes);
+app.use("/schedules", scheduleRoutes);
 
 app.get("/health", (req, res) => {
   res.json({

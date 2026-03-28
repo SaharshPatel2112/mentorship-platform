@@ -5,10 +5,9 @@ import { nanoid } from "nanoid";
 
 const router = Router();
 
-// Helper to generate unique join code
 const generateJoinCode = () => nanoid(8).toUpperCase();
 
-// CREATE SESSION (Mentor only)
+// ── CREATE SESSION (Mentor only) ───────────────────────────
 router.post(
   "/create",
   verifyClerkToken,
@@ -18,7 +17,14 @@ router.post(
       return;
     }
 
-    const { title, language = "javascript" } = req.body;
+    const {
+      title,
+      language = "javascript",
+      date_label = "",
+      time_label = "",
+      description = "",
+      assigned_student_email = "",
+    } = req.body;
 
     if (!title) {
       res.status(400).json({ error: "Session title is required" });
@@ -36,6 +42,10 @@ router.post(
           join_code: joinCode,
           language,
           status: "waiting",
+          date_label,
+          time_label,
+          description,
+          assigned_student_email,
         })
         .select()
         .single();
@@ -56,7 +66,7 @@ router.post(
   },
 );
 
-// JOIN SESSION (Student only)
+// ── JOIN SESSION (Student only) ────────────────────────────
 router.post(
   "/join/:joinCode",
   verifyClerkToken,
@@ -69,7 +79,6 @@ router.post(
     const joinCode = req.params.joinCode as string;
 
     try {
-      // Find session with join code
       const { data: session, error: findError } = await supabase
         .from("sessions")
         .select("*")
@@ -88,7 +97,6 @@ router.post(
         return;
       }
 
-      // Update session with student
       const { data: updated, error: updateError } = await supabase
         .from("sessions")
         .update({
@@ -105,17 +113,16 @@ router.post(
         return;
       }
 
-      res.status(200).json({
-        message: "Joined session successfully",
-        session: updated,
-      });
+      res
+        .status(200)
+        .json({ message: "Joined session successfully", session: updated });
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }
   },
 );
 
-// GET SESSION BY JOIN CODE (for checking before joining)
+// ── FIND SESSION BY JOIN CODE ──────────────────────────────
 router.get(
   "/find/:joinCode",
   verifyClerkToken,
@@ -141,7 +148,7 @@ router.get(
   },
 );
 
-// END SESSION (Mentor only)
+// ── END SESSION (Mentor only) ──────────────────────────────
 router.patch(
   "/end/:sessionId",
   verifyClerkToken,
@@ -151,7 +158,7 @@ router.patch(
       return;
     }
 
-    const { sessionId } = req.params;
+    const sessionId = req.params.sessionId as string;
 
     try {
       const { data, error } = await supabase
@@ -170,7 +177,6 @@ router.patch(
         return;
       }
 
-      // Delete all messages for this session
       await supabase.from("messages").delete().eq("session_id", sessionId);
 
       res.status(200).json({ message: "Session ended", session: data });
@@ -180,7 +186,7 @@ router.patch(
   },
 );
 
-// GET MY SESSIONS
+// ── GET MY SESSIONS ────────────────────────────────────────
 router.get(
   "/my",
   verifyClerkToken,
@@ -195,7 +201,7 @@ router.get(
       }
 
       const { data, error } = await query.order("created_at", {
-        ascending: false,
+        ascending: true,
       });
 
       if (error) {
@@ -210,7 +216,7 @@ router.get(
   },
 );
 
-// GET ACTIVE SESSION
+// ── GET ACTIVE SESSION ─────────────────────────────────────
 router.get(
   "/active",
   verifyClerkToken,
@@ -237,7 +243,8 @@ router.get(
     }
   },
 );
-// GET SESSION BY ID
+
+// ── FIND SESSION BY ID ─────────────────────────────────────
 router.get(
   "/find-by-id/:sessionId",
   verifyClerkToken,
@@ -263,7 +270,7 @@ router.get(
   },
 );
 
-// GET LATEST CODE SNAPSHOT
+// ── GET LATEST CODE SNAPSHOT ───────────────────────────────
 router.get(
   "/snapshot/:sessionId",
   verifyClerkToken,
@@ -285,6 +292,121 @@ router.get(
       }
 
       res.status(200).json({ snapshot: data });
+    } catch (err) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+// ── UPDATE SESSION (Mentor only) ───────────────────────────
+router.patch(
+  "/update/:sessionId",
+  verifyClerkToken,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    if (req.userRole !== "mentor") {
+      res.status(403).json({ error: "Only mentors can edit sessions" });
+      return;
+    }
+
+    const sessionId = req.params.sessionId as string;
+    const {
+      date_label,
+      time_label,
+      description,
+      assigned_student_email,
+      join_code,
+    } = req.body;
+
+    try {
+      const { data, error } = await supabase
+        .from("sessions")
+        .update({
+          ...(date_label !== undefined && { date_label }),
+          ...(time_label !== undefined && { time_label }),
+          ...(description !== undefined && { description }),
+          ...(assigned_student_email !== undefined && {
+            assigned_student_email,
+          }),
+          ...(join_code !== undefined && { join_code }),
+        })
+        .eq("id", sessionId)
+        .eq("mentor_id", req.userId)
+        .select()
+        .single();
+
+      if (error) {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+
+      res.status(200).json({ session: data });
+    } catch (err) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+// ── GET ASSIGNED SESSIONS (Student) ───────────────────────
+router.get(
+  "/assigned",
+  verifyClerkToken,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+      const { createClerkClient } = await import("@clerk/backend");
+      const clerk = createClerkClient({
+        secretKey: process.env.CLERK_SECRET_KEY!,
+      });
+      const user = await clerk.users.getUser(req.userId!);
+      const email = user.emailAddresses[0]?.emailAddress;
+
+      if (!email) {
+        res.status(200).json({ sessions: [] });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("sessions")
+        .select("*")
+        .or(`student_id.eq.${req.userId},assigned_student_email.eq.${email}`)
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+
+      res.status(200).json({ sessions: data || [] });
+    } catch (err) {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+// ── REJOIN SESSION ─────────────────────────────────────────
+router.patch(
+  "/rejoin/:sessionId",
+  verifyClerkToken,
+  async (req: AuthRequest, res: Response): Promise<void> => {
+    const sessionId = req.params.sessionId as string;
+
+    try {
+      const { data: session, error } = await supabase
+        .from("sessions")
+        .select("*")
+        .eq("id", sessionId)
+        .single();
+
+      if (error || !session) {
+        res.status(404).json({ error: "Session not found" });
+        return;
+      }
+
+      if (session.status === "ended") {
+        res.status(400).json({ error: "Session has already ended" });
+        return;
+      }
+
+      res.status(200).json({ session });
     } catch (err) {
       res.status(500).json({ error: "Internal server error" });
     }

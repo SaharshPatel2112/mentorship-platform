@@ -37,7 +37,7 @@ export default function SessionPage() {
   const [rightWidth, setRightWidth] = useState(340);
   const [videoHeight, setVideoHeight] = useState(220);
 
-  // Drag refs
+  // Refs
   const isDraggingH = useRef(false);
   const isDraggingV = useRef(false);
   const startX = useRef(0);
@@ -92,62 +92,72 @@ export default function SessionPage() {
     };
   }, []);
 
-  // ── Step 1: Fetch session data ────────────────────────────
-  // Runs as soon as user is loaded — no socket dependency
+  // ── Step 1: Fetch session data ─────────────────────────────
   useEffect(() => {
     if (!isLoaded || !user || !sessionId) return;
 
     const initSession = async () => {
-      console.log("initSession started:", sessionId);
       try {
         const data = await authFetch(`/sessions/find-by-id/${sessionId}`);
 
-        // authFetch returns null when Clerk token is cancelled
+        // null means Clerk token was cancelled — stop quietly
         if (!data) {
-          console.log("Token cancelled — retrying...");
           setLoading(false);
           return;
         }
 
-        if (!data?.session) {
-          console.error("No session found");
+        // Type safe access
+        const sessionData = (data as { session?: Session }).session;
+
+        if (!sessionData) {
+          setLoading(false);
           router.push("/dashboard");
           return;
         }
 
-        setSession(data.session);
+        setSession(sessionData);
 
         const userRole = (user.unsafeMetadata?.role as string) || "student";
         setRole(userRole === "mentor" ? "mentor" : "student");
 
+        // Fetch snapshot separately — failure is OK
         try {
           const snapData = await authFetch(`/sessions/snapshot/${sessionId}`);
-          if (snapData?.snapshot) {
-            setInitialCode(snapData.snapshot.code);
-            setInitialLanguage(snapData.snapshot.language);
+          const snap = (
+            snapData as { snapshot?: { code: string; language: string } } | null
+          )?.snapshot;
+          if (snap) {
+            setInitialCode(snap.code);
+            setInitialLanguage(snap.language);
           } else {
-            setInitialLanguage(data.session.language || "javascript");
+            setInitialLanguage(sessionData.language || "javascript");
           }
         } catch {
-          setInitialLanguage(data.session.language || "javascript");
+          setInitialLanguage(sessionData.language || "javascript");
         }
 
-        console.log("loading done");
         setLoading(false);
       } catch (err: unknown) {
-        console.error(
-          "initSession error:",
-          err instanceof Error ? err.message : err,
-        );
+        // Always convert to string — never bubble up an object
+        const message =
+          err instanceof Error
+            ? err.message
+            : typeof err === "string"
+              ? err
+              : "Failed to load session";
+        console.error("initSession error:", message);
         setLoading(false);
       }
     };
 
-    initSession();
+    // Wrap in extra .catch() — final safety net for unhandled rejections
+    initSession().catch((err) => {
+      console.error("Unhandled error:", String(err));
+      setLoading(false);
+    });
   }, [isLoaded, user, sessionId]);
 
-  // ── Step 2: Join socket room after loading is done ────────
-  // Separate effect — only runs when loading=false AND socket ready
+  // ── Step 2: Join socket room after data loads ──────────────
   useEffect(() => {
     if (loading || !user || !sessionId || !socket) return;
     if (hasJoinedRef.current) return;
@@ -156,7 +166,6 @@ export default function SessionPage() {
 
     const userRole = (user.unsafeMetadata?.role as string) || "student";
 
-    console.log("joining socket room:", sessionId);
     socket.emit("room:join", {
       sessionId,
       userId: user.id,
@@ -185,7 +194,7 @@ export default function SessionPage() {
       await authFetch(`/sessions/end/${session.id}`, { method: "PATCH" });
       router.push("/dashboard");
     } catch (err) {
-      console.error("End session error:", err);
+      console.error("End session error:", String(err));
     }
   };
 
@@ -224,7 +233,7 @@ export default function SessionPage() {
           <span className={`session-role-badge ${role}`}>{role}</span>
           {role === "mentor" ? (
             <button className="end-session-btn" onClick={handleEndSession}>
-              End Session
+              🚪 Leave & End Session
             </button>
           ) : (
             <button
@@ -239,7 +248,7 @@ export default function SessionPage() {
                 router.push("/dashboard");
               }}
             >
-              Leave Session
+              🚪 Leave Session
             </button>
           )}
         </div>

@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useUser, UserButton } from "@clerk/nextjs";
 import JoinSessionModal from "@/components/JoinSessionModal";
+import StudentSessionsList from "@/components/StudentSessionsList";
 import "../dashboard.css";
 
 export default function StudentDashboard() {
   const { user } = useUser();
-  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [showJoinModal, setShowJoin] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
 
   return (
     <div className="dashboard-container">
@@ -15,53 +17,75 @@ export default function StudentDashboard() {
         <div className="navbar-logo">MentorSpace 🚀</div>
         <div className="navbar-user">
           <span className="navbar-role-badge">student</span>
-          <UserButton afterSignOutUrl="/" />
+          <UserButton />
         </div>
       </nav>
 
       <div className="dashboard-content">
-        <div className="dashboard-welcome">
-          <h2>Welcome, {user?.firstName}! 👋</h2>
-          <p>Ready to learn something new today?</p>
-        </div>
-
-        <div className="dashboard-cards">
-          <div className="dashboard-card">
-            <div className="card-icon">🔗</div>
-            <div className="card-title">Join Session</div>
-            <div className="card-desc">
-              Have a join code from your mentor? Click below to enter and join
-              the session.
+        {!showSchedule ? (
+          <>
+            <div className="dashboard-welcome">
+              <h2>Welcome, {user?.firstName}! 👋</h2>
+              <p>Ready to learn something new today?</p>
             </div>
-            <button className="card-btn" onClick={() => setShowJoinModal(true)}>
-              Join Session
+
+            <div className="dashboard-cards">
+              {/* Join Session */}
+              <div className="dashboard-card">
+                <div className="card-icon">🔗</div>
+                <div className="card-title">Join Session</div>
+                <div className="card-desc">
+                  Have a join code from your mentor? Enter it to jump straight
+                  into the live session.
+                </div>
+                <button className="card-btn" onClick={() => setShowJoin(true)}>
+                  Join Session
+                </button>
+              </div>
+
+              {/* My Schedule */}
+              <div className="dashboard-card">
+                <div className="card-icon">📅</div>
+                <div className="card-title">My Schedule</div>
+                <div className="card-desc">
+                  View upcoming sessions your mentor has scheduled for you with
+                  date, time and join code.
+                </div>
+                <button
+                  className="card-btn-outline"
+                  onClick={() => setShowSchedule(true)}
+                >
+                  View Schedule
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setShowSchedule(false)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                background: "none",
+                border: "none",
+                color: "var(--color-primary)",
+                fontWeight: 600,
+                fontSize: "0.9rem",
+                cursor: "pointer",
+                marginBottom: "20px",
+                padding: 0,
+              }}
+            >
+              ← Back to Dashboard
             </button>
-          </div>
-
-          <div className="dashboard-card">
-            <div className="card-icon">📚</div>
-            <div className="card-title">My Sessions</div>
-            <div className="card-desc">
-              View all your past mentorship sessions and revisit code snapshots.
-            </div>
-            <button className="card-btn-outline">View Sessions</button>
-          </div>
-
-          <div className="dashboard-card">
-            <div className="card-icon">🎥</div>
-            <div className="card-title">Video + Chat</div>
-            <div className="card-desc">
-              1-on-1 video call with mic/camera controls and real-time session
-              chat.
-            </div>
-            <button className="card-btn-outline">Learn More</button>
-          </div>
-        </div>
+            <StudentSessionsList />
+          </>
+        )}
       </div>
 
-      {showJoinModal && (
-        <JoinSessionModal onClose={() => setShowJoinModal(false)} />
-      )}
+      {showJoinModal && <JoinSessionModal onClose={() => setShowJoin(false)} />}
     </div>
   );
 }

@@ -6,6 +6,7 @@
   overflow: hidden;
 }
 
+/* ── Navbar ─────────────────────────────────────────────── */
 .session-navbar {
   display: flex;
   align-items: center;
@@ -20,29 +21,34 @@
 .session-navbar-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .session-logo {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   color: #fff;
 }
 
 .session-title {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: #ccc;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .session-code-badge {
   background: #2d2d2d;
   border: 1px solid #444;
-  color: #888;
+  color: #a0a0a0;
   padding: 3px 10px;
   border-radius: 4px;
-  font-size: 0.78rem;
-  font-family: monospace;
-  letter-spacing: 2px;
+  font-size: 0.75rem;
+  font-family: "Courier New", monospace;
+  letter-spacing: 3px;
+  font-weight: 600;
 }
 
 .session-navbar-right {
@@ -52,25 +58,28 @@
 }
 
 .session-role-badge {
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: capitalize;
+  letter-spacing: 0.03em;
 }
 
 .session-role-badge.mentor {
   background: #312e81;
   color: #a5b4fc;
+  border: 1px solid #4338ca;
 }
 
 .session-role-badge.student {
   background: #064e3b;
   color: #6ee7b7;
+  border: 1px solid #065f46;
 }
 
 .end-session-btn {
-  padding: 6px 14px;
+  padding: 7px 16px;
   background: #7f1d1d;
   color: #fca5a5;
   border: 1px solid #991b1b;
@@ -79,13 +88,16 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  letter-spacing: 0.01em;
 }
 
 .end-session-btn:hover {
   background: #991b1b;
   color: #fff;
+  border-color: #b91c1c;
 }
 
+/* ── Body ────────────────────────────────────────────────── */
 .session-body {
   display: flex;
   flex: 1;
@@ -97,7 +109,6 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: 1px solid #333;
 }
 
 .right-panel {
@@ -107,11 +118,7 @@
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
-}
-
-.video-wrapper {
-  height: 220px;
-  flex-shrink: 0;
+  border-left: 1px solid #333;
 }
 
 .chat-wrapper {
@@ -123,22 +130,10 @@
   overflow: hidden;
 }
 
-/* Student cursor style in Monaco */
-.student-cursor {
-  background: rgba(255, 165, 0, 0.3);
-  border-left: 2px solid orange;
-}
-
-.student-cursor-before {
-  content: "▸";
-  color: orange;
-  font-size: 12px;
-}
-
-/* Resizable divider between editor and right panel */
+/* ── Resize dividers ─────────────────────────────────────── */
 .resize-divider-h {
   width: 5px;
-  background: #333;
+  background: #2d2d2d;
   cursor: col-resize;
   flex-shrink: 0;
   transition: background 0.15s;
@@ -146,21 +141,29 @@
   z-index: 10;
 }
 
-.resize-divider-h:hover,
-.resize-divider-h.dragging {
+.resize-divider-h:hover {
   background: #6366f1;
 }
 
-/* Resizable divider between video and chat */
 .resize-divider-v {
   height: 5px;
-  background: #333;
+  background: #2d2d2d;
   cursor: row-resize;
   flex-shrink: 0;
   transition: background 0.15s;
 }
 
-.resize-divider-v:hover,
-.resize-divider-v.dragging {
+.resize-divider-v:hover {
   background: #6366f1;
+}
+
+/* ── Student cursor in Monaco ────────────────────────────── */
+.student-cursor {
+  background: rgba(255, 165, 0, 0.3);
+  border-left: 2px solid orange;
+}
+
+.mentor-cursor {
+  background: rgba(100, 180, 255, 0.3);
+  border-left: 2px solid #64b4ff;
 }

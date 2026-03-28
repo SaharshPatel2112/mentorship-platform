@@ -94,23 +94,29 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
 
   // ── Mentor starts call ─────────────────────────────────────
   const startCall = async () => {
-    setStatus("connecting");
-    setError("");
+    try {
+      setStatus("connecting");
+      setError("");
 
-    const stream = await getLocalStream();
-    if (!stream || !socket) return;
+      const stream = await getLocalStream();
+      if (!stream || !socket) return;
 
-    const pc = createPeerConnection(stream);
+      const pc = createPeerConnection(stream);
 
-    // Create SDP offer — describes what mentor's browser can do
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+      // Create SDP offer — describes what mentor's browser can do
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
 
-    // Send offer to student via socket
-    socket.emit("video:offer", { sessionId, offer });
+      // Send offer to student via socket
+      socket.emit("video:offer", { sessionId, offer });
 
-    // Tell student we are ready
-    socket.emit("video:ready", { sessionId });
+      // Tell student we are ready
+      socket.emit("video:ready", { sessionId });
+    } catch (err) {
+      console.error("Error starting call:", err);
+      setError("Failed to establish connection.");
+      setStatus("error");
+    }
   };
 
   // ── Socket event listeners ─────────────────────────────────
@@ -121,23 +127,27 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
     socket.on(
       "video:offer",
       async ({ offer }: { offer: RTCSessionDescriptionInit }) => {
-        console.log("Received video offer");
-        setStatus("connecting");
+        try {
+          console.log("Received video offer");
+          setStatus("connecting");
 
-        const stream = await getLocalStream();
-        if (!stream) return;
+          const stream = await getLocalStream();
+          if (!stream) return;
 
-        const pc = createPeerConnection(stream);
+          const pc = createPeerConnection(stream);
 
-        // Set mentor's description as remote
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+          // Set mentor's description as remote
+          await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
-        // Create answer — student's browser description
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
+          // Create answer — student's browser description
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
 
-        // Send answer back to mentor
-        socket.emit("video:answer", { sessionId, answer });
+          // Send answer back to mentor
+          socket.emit("video:answer", { sessionId, answer });
+        } catch (err) {
+          console.error("Error handling video offer:", err);
+        }
       },
     );
 
@@ -145,11 +155,15 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
     socket.on(
       "video:answer",
       async ({ answer }: { answer: RTCSessionDescriptionInit }) => {
-        console.log("Received video answer");
-        if (pcRef.current) {
-          await pcRef.current.setRemoteDescription(
-            new RTCSessionDescription(answer),
-          );
+        try {
+          console.log("Received video answer");
+          if (pcRef.current) {
+            await pcRef.current.setRemoteDescription(
+              new RTCSessionDescription(answer),
+            );
+          }
+        } catch (err) {
+          console.error("Error setting remote description:", err);
         }
       },
     );

@@ -1,0 +1,242 @@
+.sessions-container {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.sessions-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.sessions-table-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.sessions-count {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.add-row-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.add-row-btn:hover {
+  background: var(--color-primary-dark);
+  transform: translateY(-1px);
+}
+
+/* ── Table ───────────────────────────────────────────────── */
+.sessions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.sessions-table thead tr {
+  background: #f8fafc;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.sessions-table thead th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.sessions-table tbody tr {
+  border-bottom: 1px solid var(--color-border);
+  transition: background 0.15s;
+}
+
+.sessions-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.sessions-table tbody tr:hover {
+  background: #fafbff;
+}
+
+.sessions-table tbody tr.new-row {
+  background: #fafbff;
+}
+
+.sessions-table td {
+  padding: 11px 16px;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+/* ── Inputs ──────────────────────────────────────────────── */
+.table-input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1.5px solid #c7d2fe;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: var(--color-text);
+  background: #fff;
+  font-family: var(--font-sans);
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.table-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.table-input::placeholder {
+  color: #cbd5e1;
+}
+
+/* ── Join Code Cell ──────────────────────────────────────── */
+.join-code-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.join-code-text {
+  font-family: "Courier New", monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 2px;
+}
+
+.copy-code-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 3px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.copy-code-btn:hover {
+  background: #eef2ff;
+}
+
+/* ── Action Buttons ──────────────────────────────────────── */
+.table-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tbl-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  border: none;
+}
+
+.tbl-btn.edit {
+  background: #eef2ff;
+  color: var(--color-primary);
+  border: 1px solid #c7d2fe;
+}
+
+.tbl-btn.edit:hover {
+  background: #e0e7ff;
+}
+
+.tbl-btn.save {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.tbl-btn.save:hover {
+  background: var(--color-primary-dark);
+}
+
+.tbl-btn.save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.tbl-btn.cancel {
+  background: #f1f5f9;
+  color: var(--color-text-muted);
+}
+
+.tbl-btn.cancel:hover {
+  background: #e2e8f0;
+}
+
+.tbl-btn.join {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.tbl-btn.join:hover {
+  background: #bbf7d0;
+}
+
+/* ── Empty State ─────────────────────────────────────────── */
+.sessions-empty-row td {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.sessions-empty-icon {
+  font-size: 2.5rem;
+  margin-bottom: 12px;
+}
+
+.sessions-empty-text {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.sessions-empty-sub {
+  font-size: 0.825rem;
+  color: var(--color-text-muted);
+}
+.tbl-btn.delete {
+  background: #fef2f2;
+  color: #ef4444;
+  border: 1px solid #fecaca;
+}
+
+.tbl-btn.delete:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+}
