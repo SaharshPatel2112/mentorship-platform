@@ -16,7 +16,6 @@ interface Schedule {
   isEditing?: boolean;
 }
 
-// Convert 24h time to IST display format
 const toIST = (time24: string): string => {
   if (!time24) return "";
   const [h, m] = time24.split(":").map(Number);
@@ -71,7 +70,7 @@ export default function MentorSessionsList() {
     setSchedules((prev) =>
       prev.map((s) => {
         if (s.id !== id) return s;
-        // When time_value changes, also update time_label for display
+
         if (field === "time_value") {
           return { ...s, time_value: value, time_label: toIST(value) };
         }

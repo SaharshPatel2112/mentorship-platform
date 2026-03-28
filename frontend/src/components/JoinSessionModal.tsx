@@ -38,7 +38,6 @@ export default function JoinSessionModal({ onClose }: Props) {
       const e = err as Error;
       const msg = e.message || "Failed to join session";
 
-      // Show friendly message
       if (msg.includes("ended")) {
         setError(
           "This session has ended. Ask your mentor to create a new one.",

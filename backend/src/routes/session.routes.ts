@@ -96,8 +96,6 @@ router.post(
         return;
       }
 
-      // Allow rejoin — student can join active sessions too
-      // Only update student_id if not already set
       const updatePayload: Record<string, unknown> = {
         status: "active",
       };

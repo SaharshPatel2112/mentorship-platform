@@ -37,7 +37,6 @@ export default function CreateSessionModal({ onClose, onCreated }: Props) {
     setError("");
 
     try {
-      // ✅ FIX: Added 'as { session: Session }' here
       const data = (await authFetch("/sessions/create", {
         method: "POST",
         body: JSON.stringify({ title, language }),

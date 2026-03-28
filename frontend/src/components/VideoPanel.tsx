@@ -10,7 +10,6 @@ interface Props {
   role: "mentor" | "student";
 }
 
-// Free Google STUN server — helps find public IP behind router/firewall
 const ICE_SERVERS = {
   iceServers: [
     { urls: "stun:stun.l.google.com:19302" },
@@ -40,7 +39,6 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
       });
       localStreamRef.current = stream;
 
-      // Show your own camera in the small overlay box
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
@@ -62,7 +60,6 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
       pc.addTrack(track, stream);
     });
 
-    // When browser finds a network path → send to other person via socket
     pc.onicecandidate = (e) => {
       if (e.candidate && socket) {
         socket.emit("video:ice", {
@@ -72,7 +69,6 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
       }
     };
 
-    // When remote video arrives → attach to remote video element
     pc.ontrack = (e) => {
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = e.streams[0];
@@ -80,7 +76,6 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
       }
     };
 
-    // Connection state changes
     pc.onconnectionstatechange = () => {
       console.log("WebRTC state:", pc.connectionState);
       if (pc.connectionState === "connected") setStatus("connected");
@@ -103,14 +98,11 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
 
       const pc = createPeerConnection(stream);
 
-      // Create SDP offer — describes what mentor's browser can do
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
 
-      // Send offer to student via socket
       socket.emit("video:offer", { sessionId, offer });
 
-      // Tell student we are ready
       socket.emit("video:ready", { sessionId });
     } catch (err) {
       console.error("Error starting call:", err);
@@ -123,7 +115,6 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
   useEffect(() => {
     if (!socket) return;
 
-    // Student receives offer from mentor → creates answer
     socket.on(
       "video:offer",
       async ({ offer }: { offer: RTCSessionDescriptionInit }) => {
@@ -136,14 +127,11 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
 
           const pc = createPeerConnection(stream);
 
-          // Set mentor's description as remote
           await pc.setRemoteDescription(new RTCSessionDescription(offer));
 
-          // Create answer — student's browser description
           const answer = await pc.createAnswer();
           await pc.setLocalDescription(answer);
 
-          // Send answer back to mentor
           socket.emit("video:answer", { sessionId, answer });
         } catch (err) {
           console.error("Error handling video offer:", err);
@@ -151,7 +139,6 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
       },
     );
 
-    // Mentor receives answer from student
     socket.on(
       "video:answer",
       async ({ answer }: { answer: RTCSessionDescriptionInit }) => {
@@ -168,8 +155,6 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
       },
     );
 
-    // Both receive ICE candidates → add to peer connection
-    // This helps establish the best network path
     socket.on(
       "video:ice",
       async ({ candidate }: { candidate: RTCIceCandidateInit }) => {

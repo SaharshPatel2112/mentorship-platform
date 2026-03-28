@@ -83,7 +83,6 @@ export const setupSessionSocket = (io: Server) => {
 
         console.log(`👤 ${userName} (${role}) joined room: ${sessionId}`);
 
-        // Notify others in room
         socket.to(sessionId).emit("user:joined", { userId, userName, role });
 
         // System message to others only — not saved to DB
@@ -144,10 +143,8 @@ export const setupSessionSocket = (io: Server) => {
     socket.on(
       "code:change",
       async ({ sessionId, code, language }: CodeChangeData) => {
-        // Broadcast to others immediately
         socket.to(sessionId).emit("code:update", { code, language });
 
-        // Save snapshot max once every 5 seconds per session
         const now = Date.now();
         if (
           !lastSnapshotTime[sessionId] ||
@@ -231,24 +228,21 @@ export const setupSessionSocket = (io: Server) => {
     );
 
     // ── WebRTC SIGNALING ───────────────────────────────────
-    // Mentor sends SDP offer → forward to student
+
     socket.on("video:offer", ({ sessionId, offer }: VideoOfferData) => {
       console.log(`📹 Video offer from ${socket.data.userName}`);
       socket.to(sessionId).emit("video:offer", { offer });
     });
 
-    // Student sends SDP answer → forward to mentor
     socket.on("video:answer", ({ sessionId, answer }: VideoAnswerData) => {
       console.log(`📹 Video answer from ${socket.data.userName}`);
       socket.to(sessionId).emit("video:answer", { answer });
     });
 
-    // Both send ICE candidates → forward to other person
     socket.on("video:ice", ({ sessionId, candidate }: IceCandidateData) => {
       socket.to(sessionId).emit("video:ice", { candidate });
     });
 
-    // Notify other user that someone started video call
     socket.on("video:ready", ({ sessionId }: { sessionId: string }) => {
       console.log(`📹 Video ready in room: ${sessionId}`);
       socket.to(sessionId).emit("video:ready");
@@ -264,7 +258,6 @@ export const setupSessionSocket = (io: Server) => {
           roomUsers[sessionId].delete(userId);
         }
 
-        // Notify others
         socket.to(sessionId).emit("chat:receive", {
           id: `sys-${Date.now()}`,
           senderId: "system",
@@ -274,7 +267,6 @@ export const setupSessionSocket = (io: Server) => {
           createdAt: new Date().toISOString(),
         });
 
-        // Notify other user that this person left — they can still rejoin
         socket.to(sessionId).emit("user:left", {
           userName,
           role,
@@ -311,7 +303,6 @@ export const setupSessionSocket = (io: Server) => {
             createdAt: new Date().toISOString(),
           });
 
-          // Tell remaining user that other person disconnected but can rejoin
           socket.to(sessionId).emit("user:left", {
             userName,
             role,

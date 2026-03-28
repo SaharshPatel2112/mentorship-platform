@@ -92,7 +92,7 @@ export default function SessionPage() {
     };
   }, []);
 
-  // ── Step 1: Fetch session data ─────────────────────────────
+  // ── Fetch session data ─────────────────────────────
   useEffect(() => {
     if (!isLoaded || !user || !sessionId) return;
 
@@ -100,13 +100,11 @@ export default function SessionPage() {
       try {
         const data = await authFetch(`/sessions/find-by-id/${sessionId}`);
 
-        // null means Clerk token was cancelled — stop quietly
         if (!data) {
           setLoading(false);
           return;
         }
 
-        // Type safe access
         const sessionData = (data as { session?: Session }).session;
 
         if (!sessionData) {
@@ -120,7 +118,6 @@ export default function SessionPage() {
         const userRole = (user.unsafeMetadata?.role as string) || "student";
         setRole(userRole === "mentor" ? "mentor" : "student");
 
-        // Fetch snapshot separately — failure is OK
         try {
           const snapData = await authFetch(`/sessions/snapshot/${sessionId}`);
           const snap = (
@@ -138,7 +135,6 @@ export default function SessionPage() {
 
         setLoading(false);
       } catch (err: unknown) {
-        // Always convert to string — never bubble up an object
         const message =
           err instanceof Error
             ? err.message
@@ -150,14 +146,13 @@ export default function SessionPage() {
       }
     };
 
-    // Wrap in extra .catch() — final safety net for unhandled rejections
     initSession().catch((err) => {
       console.error("Unhandled error:", String(err));
       setLoading(false);
     });
   }, [isLoaded, user, sessionId]);
 
-  // ── Step 2: Join socket room after data loads ──────────────
+  // ── Join socket room after data loads ──────────────
   useEffect(() => {
     if (loading || !user || !sessionId || !socket) return;
     if (hasJoinedRef.current) return;
@@ -179,7 +174,6 @@ export default function SessionPage() {
         userName: user.firstName || "User",
       });
     };
-    // Listen for other user leaving — show notification but don't redirect
     socket.on(
       "user:left",
       ({
@@ -191,7 +185,6 @@ export default function SessionPage() {
         canRejoin: boolean;
       }) => {
         if (canRejoin) {
-          // Show temporary notification
           const toast = document.createElement("div");
           toast.innerText = `${userName} left — they can rejoin`;
           toast.style.cssText = `

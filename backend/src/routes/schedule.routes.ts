@@ -56,7 +56,6 @@ router.post(
 );
 
 // ── GET MY SCHEDULES (Mentor) ──────────────────────────────
-// Only returns today + future schedules
 router.get(
   "/my",
   verifyClerkToken,
