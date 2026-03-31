@@ -30,7 +30,6 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
   const [cameraOn, setCameraOn] = useState(true);
   const [error, setError] = useState("");
 
-  // ── Get camera + mic from browser ─────────────────────────
   const getLocalStream = async (): Promise<MediaStream | null> => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -51,11 +50,10 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
     }
   };
 
-  // ── Create RTCPeerConnection ───────────────────────────────
+  // ── RTCPeerConnection ───────────────────────────────
   const createPeerConnection = (stream: MediaStream): RTCPeerConnection => {
     const pc = new RTCPeerConnection(ICE_SERVERS);
 
-    // Add all local tracks (video + audio) to connection
     stream.getTracks().forEach((track) => {
       pc.addTrack(track, stream);
     });
@@ -168,7 +166,6 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
       },
     );
 
-    // Mentor is ready — student auto-joins call
     socket.on("video:ready", async () => {
       console.log("Mentor is ready — auto joining...");
     });
@@ -181,7 +178,6 @@ export default function VideoPanel({ sessionId, socket, role }: Props) {
     };
   }, [socket, sessionId]);
 
-  // ── Cleanup on unmount ─────────────────────────────────────
   useEffect(() => {
     return () => {
       localStreamRef.current?.getTracks().forEach((t) => t.stop());

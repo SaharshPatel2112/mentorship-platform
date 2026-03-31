@@ -90,7 +90,6 @@ router.post("/", async (req: Request, res: Response): Promise<void> => {
       code: 1,
     });
   } finally {
-    // Clean up temp file
     try {
       unlinkSync(filePath);
     } catch {

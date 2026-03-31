@@ -18,14 +18,7 @@ interface Props {
   onResizeStart?: (e: React.MouseEvent) => void;
 }
 
-const PISTON_LANGUAGES: Record<string, { language: string; version: string }> =
-  {
-    javascript: { language: "javascript", version: "18.15.0" },
-    typescript: { language: "typescript", version: "5.0.3" },
-    python: { language: "python", version: "3.10.0" },
-    java: { language: "java", version: "15.0.2" },
-    cpp: { language: "c++", version: "10.2.0" },
-  };
+const SUPPORTED = ["javascript", "python"];
 
 export default function OutputPanel({
   code,
@@ -39,39 +32,25 @@ export default function OutputPanel({
   const [running, setRunning] = useState(false);
   const [minimized, setMinimized] = useState(false);
 
+  const isSupported = SUPPORTED.includes(language);
+
   // ── Listen for output from other user ─────────────────
   useEffect(() => {
     if (!socket) return;
-
     socket.on("code:output", (result: OutputResult) => {
       setOutput(result);
       setMinimized(false);
     });
-
     return () => {
       socket.off("code:output");
     };
   }, [socket]);
 
   const handleRun = async () => {
-    if (!code.trim()) return;
+    if (!code.trim() || !isSupported) return;
     setRunning(true);
     setOutput(null);
     setMinimized(false);
-
-    const pistonLang = PISTON_LANGUAGES[language];
-
-    if (!pistonLang) {
-      const result = {
-        stdout: "",
-        stderr: `Language "${language}" is not supported.`,
-        code: 1,
-      };
-      setOutput(result);
-      socket?.emit("code:output", { sessionId, result });
-      setRunning(false);
-      return;
-    }
 
     try {
       const response = await fetch(
@@ -79,16 +58,11 @@ export default function OutputPanel({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            language: pistonLang.language,
-            version: pistonLang.version,
-            code,
-          }),
+          body: JSON.stringify({ language, code }),
         },
       );
 
       const result = await response.json();
-
       setOutput(result);
       socket?.emit("code:output", { sessionId, result });
     } catch {
@@ -117,7 +91,7 @@ export default function OutputPanel({
         flexDirection: "column",
       }}
     >
-      {/* ── Drag divider — always visible, moves with panel ── */}
+      {/* ── Drag divider ── */}
       <div
         onMouseDown={onResizeStart}
         style={{
@@ -140,9 +114,30 @@ export default function OutputPanel({
       <div className="output-header">
         <div className="output-header-left">
           <span className="output-title">▶ Output</span>
-          <button className="run-btn" onClick={handleRun} disabled={running}>
-            {running ? "⏳ Running..." : "▶ Run Code"}
+
+          <button
+            className="run-btn"
+            onClick={handleRun}
+            disabled={running || !isSupported}
+            title={
+              !isSupported
+                ? `${language} not supported — use JavaScript or Python`
+                : "Run code"
+            }
+            style={{
+              background: !isSupported || running ? "#444" : "#2ea043",
+              cursor: !isSupported || running ? "not-allowed" : "pointer",
+              color: !isSupported || running ? "#666" : "#fff",
+              opacity: 1,
+            }}
+          >
+            {running
+              ? "⏳ Running..."
+              : !isSupported
+                ? "▶ Run (not supported)"
+                : "▶ Run Code"}
           </button>
+
           {output && (
             <button
               className="output-clear-btn"
@@ -152,6 +147,7 @@ export default function OutputPanel({
             </button>
           )}
         </div>
+
         <button
           className="output-minimize-btn"
           onClick={() => setMinimized(!minimized)}
@@ -167,7 +163,9 @@ export default function OutputPanel({
 
           {!running && !output && (
             <div className="output-empty">
-              Click "▶ Run Code" to execute · Output syncs to both users
+              {isSupported
+                ? 'Click "▶ Run Code" to execute · Output syncs to both users'
+                : `⚠️ ${language} execution not supported. Switch to JavaScript or Python to run code.`}
             </div>
           )}
 
