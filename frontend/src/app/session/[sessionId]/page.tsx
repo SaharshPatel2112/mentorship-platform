@@ -325,7 +325,10 @@ export default function SessionPage() {
       <div className="session-body">
         {/* Editor */}
         <div className="editor-panel" style={{ flex: 1, minWidth: 0 }}>
-          <div className="editor-output-wrapper">
+          <div
+            className="editor-output-wrapper"
+            style={{ position: "relative" }}
+          >
             {/* Editor takes remaining height */}
             <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
               <CodeEditor
@@ -338,25 +341,6 @@ export default function SessionPage() {
                 onLanguageChange={(lang) => setCurrentLanguage(lang)}
               />
             </div>
-
-            {/* Draggable divider between editor and output */}
-            <div
-              className="resize-divider-output"
-              onMouseDown={onMouseDownOutput}
-              style={{
-                height: "6px",
-                background: "#2d2d2d",
-                cursor: "row-resize",
-                flexShrink: 0,
-                transition: "background 0.15s",
-              }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#6366f1")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "#2d2d2d")
-              }
-            />
 
             {/* Output panel with controlled height */}
             <div
@@ -372,6 +356,7 @@ export default function SessionPage() {
                 socket={socket}
                 sessionId={sessionId}
                 height={outputHeight}
+                onResizeStart={onMouseDownOutput}
               />
             </div>
           </div>

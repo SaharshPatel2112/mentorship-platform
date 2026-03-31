@@ -15,6 +15,7 @@ interface Props {
   socket: Socket | null;
   sessionId: string;
   height?: number;
+  onResizeStart?: (e: React.MouseEvent) => void;
 }
 
 const PISTON_LANGUAGES: Record<string, { language: string; version: string }> =
@@ -32,6 +33,7 @@ export default function OutputPanel({
   socket,
   sessionId,
   height = 200,
+  onResizeStart,
 }: Props) {
   const [output, setOutput] = useState<OutputResult | null>(null);
   const [running, setRunning] = useState(false);
@@ -103,9 +105,38 @@ export default function OutputPanel({
 
   return (
     <div
-      className="output-panel"
-      style={{ height: minimized ? "38px" : `${height}px` }}
+      style={{
+        position: minimized ? "absolute" : "relative",
+        bottom: minimized ? 0 : "auto",
+        left: minimized ? 0 : "auto",
+        right: minimized ? 0 : "auto",
+        height: minimized ? "auto" : `${height}px`,
+        zIndex: minimized ? 50 : "auto",
+        background: "#1e1e1e",
+        display: "flex",
+        flexDirection: "column",
+      }}
     >
+      {/* ── Drag divider — always visible, moves with panel ── */}
+      <div
+        onMouseDown={onResizeStart}
+        style={{
+          height: "6px",
+          background: "#2d2d2d",
+          cursor: minimized ? "default" : "row-resize",
+          flexShrink: 0,
+          transition: "background 0.15s",
+          display: minimized ? "none" : "block",
+        }}
+        onMouseEnter={(e) => {
+          if (!minimized) e.currentTarget.style.background = "#6366f1";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "#2d2d2d";
+        }}
+      />
+
+      {/* ── Header ── */}
       <div className="output-header">
         <div className="output-header-left">
           <span className="output-title">▶ Output</span>
@@ -129,6 +160,7 @@ export default function OutputPanel({
         </button>
       </div>
 
+      {/* ── Content ── */}
       {!minimized && (
         <div className="output-content">
           {running && <div className="output-running">⏳ Running code...</div>}
@@ -149,9 +181,7 @@ export default function OutputPanel({
                 <div className="output-error">{output.stderr}</div>
               )}
               {!output.stdout && !output.stderr && (
-                <div className="output-empty">
-                  ✅ Code ran successfully with no output
-                </div>
+                <div className="output-empty">✅ Code ran with no output</div>
               )}
             </>
           )}
