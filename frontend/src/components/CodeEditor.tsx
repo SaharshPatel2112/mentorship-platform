@@ -11,6 +11,8 @@ interface Props {
   initialCode?: string;
   initialLanguage?: string;
   role: "mentor" | "student";
+  onCodeChange?: (code: string) => void;
+  onLanguageChange?: (lang: string) => void;
 }
 
 const LANGUAGES = [
@@ -32,6 +34,8 @@ export default function CodeEditor({
   initialCode = "// Start coding here...\n",
   initialLanguage = "javascript",
   role,
+  onCodeChange,
+  onLanguageChange,
 }: Props) {
   // ── useMonaco MUST be inside the component ─────────────────
   const monaco = useMonaco();
@@ -99,6 +103,8 @@ export default function CodeEditor({
       if (isRemoteRef.current || !socket) return;
       if (debounceRef.current) clearTimeout(debounceRef.current);
 
+      onCodeChange?.(value || "");
+
       debounceRef.current = setTimeout(() => {
         socket.emit("code:change", {
           sessionId,
@@ -107,7 +113,7 @@ export default function CodeEditor({
         });
       }, 300);
     },
-    [socket, sessionId, language],
+    [socket, sessionId, language, onCodeChange],
   );
 
   // ── Apply remote code without resetting editor state ──────
@@ -139,6 +145,7 @@ export default function CodeEditor({
       ({ code, language: lang }: { code: string; language: string }) => {
         applyRemoteCode(code);
         setLanguage(lang);
+        onCodeChange?.(code);
       },
     );
 
@@ -148,6 +155,7 @@ export default function CodeEditor({
       ({ code, language: lang }: { code: string; language: string }) => {
         applyRemoteCode(code);
         setLanguage(lang);
+        onCodeChange?.(code);
       },
     );
 
@@ -309,7 +317,10 @@ export default function CodeEditor({
         <span style={{ color: "#888", fontSize: "0.8rem" }}>Language:</span>
         <select
           value={language}
-          onChange={(e) => setLanguage(e.target.value)}
+          onChange={(e) => {
+            setLanguage(e.target.value);
+            onLanguageChange?.(e.target.value);
+          }}
           style={{
             background: "#2d2d2d",
             color: "#fff",

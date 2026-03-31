@@ -9,6 +9,7 @@ import ChatPanel from "@/components/ChatPanel";
 import VideoPanel from "@/components/VideoPanel";
 import { useApiToken } from "@/lib/getToken";
 import "./session.css";
+import OutputPanel from "@/components/OutputPanel";
 
 interface Session {
   id: string;
@@ -32,6 +33,8 @@ export default function SessionPage() {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<"mentor" | "student">("student");
   const [loading, setLoading] = useState(true);
+  const [currentCode, setCurrentCode] = useState("// Start coding here...\n");
+  const [currentLanguage, setCurrentLanguage] = useState("javascript");
 
   // Panel sizes
   const [rightWidth, setRightWidth] = useState(340);
@@ -45,6 +48,10 @@ export default function SessionPage() {
   const startW = useRef(0);
   const startH = useRef(0);
   const hasJoinedRef = useRef(false);
+  const [outputHeight, setOutputHeight] = useState(200);
+  const isDraggingOutput = useRef(false);
+  const startYOutput = useRef(0);
+  const startHOutput = useRef(0);
 
   // ── Resize handlers ───────────────────────────────────────
   const onMouseDownH = useCallback(
@@ -67,6 +74,16 @@ export default function SessionPage() {
     [videoHeight],
   );
 
+  const onMouseDownOutput = useCallback(
+    (e: React.MouseEvent) => {
+      isDraggingOutput.current = true;
+      startYOutput.current = e.clientY;
+      startHOutput.current = outputHeight;
+      e.preventDefault();
+    },
+    [outputHeight],
+  );
+
   useEffect(() => {
     const onMouseMove = (e: MouseEvent) => {
       if (isDraggingH.current) {
@@ -76,13 +93,22 @@ export default function SessionPage() {
       }
       if (isDraggingV.current) {
         const delta = e.clientY - startY.current;
-        const newHeight = Math.min(400, Math.max(120, startH.current + delta));
+        const newHeight = Math.min(400, Math.max(220, startH.current + delta));
         setVideoHeight(newHeight);
+      }
+      if (isDraggingOutput.current) {
+        const delta = startYOutput.current - e.clientY;
+        const newHeight = Math.min(
+          500,
+          Math.max(80, startHOutput.current + delta),
+        );
+        setOutputHeight(newHeight);
       }
     };
     const onMouseUp = () => {
       isDraggingH.current = false;
       isDraggingV.current = false;
+      isDraggingOutput.current = false;
     };
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
@@ -299,13 +325,56 @@ export default function SessionPage() {
       <div className="session-body">
         {/* Editor */}
         <div className="editor-panel" style={{ flex: 1, minWidth: 0 }}>
-          <CodeEditor
-            sessionId={sessionId}
-            socket={socket}
-            role={role}
-            initialCode={initialCode}
-            initialLanguage={initialLanguage}
-          />
+          <div className="editor-output-wrapper">
+            {/* Editor takes remaining height */}
+            <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+              <CodeEditor
+                sessionId={sessionId}
+                socket={socket}
+                role={role}
+                initialCode={initialCode}
+                initialLanguage={initialLanguage}
+                onCodeChange={(code) => setCurrentCode(code)}
+                onLanguageChange={(lang) => setCurrentLanguage(lang)}
+              />
+            </div>
+
+            {/* Draggable divider between editor and output */}
+            <div
+              className="resize-divider-output"
+              onMouseDown={onMouseDownOutput}
+              style={{
+                height: "6px",
+                background: "#2d2d2d",
+                cursor: "row-resize",
+                flexShrink: 0,
+                transition: "background 0.15s",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = "#6366f1")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "#2d2d2d")
+              }
+            />
+
+            {/* Output panel with controlled height */}
+            <div
+              style={{
+                height: outputHeight,
+                overflow: "hidden",
+                flexShrink: 0,
+              }}
+            >
+              <OutputPanel
+                code={currentCode}
+                language={currentLanguage || initialLanguage}
+                socket={socket}
+                sessionId={sessionId}
+                height={outputHeight}
+              />
+            </div>
+          </div>
         </div>
 
         {/* Horizontal divider */}

@@ -281,6 +281,19 @@ export const setupSessionSocket = (io: Server) => {
       },
     );
 
+    socket.on(
+      "code:output",
+      ({
+        sessionId,
+        result,
+      }: {
+        sessionId: string;
+        result: { stdout: string; stderr: string; code: number };
+      }) => {
+        io.to(sessionId).emit("code:output", result);
+      },
+    );
+
     socket.on("disconnect", () => {
       console.log(`❌ Socket disconnected: ${socket.id}`);
       const { sessionId, userName, userId, role } = socket.data || {};
